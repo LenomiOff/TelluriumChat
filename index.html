@@ -1,93 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Tellurium-Chat</title>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tellurium-Chat</title>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #121212; /* fond sombre moderne */
-    color: #fff;
-    margin: 0;
-    padding: 10px;
-    box-sizing: border-box;
-}
-
-h2 {
-    text-align: center;
-    color: #00bfff; /* titre bleu clair */
-    margin-bottom: 20px;
-}
-
-.container {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-#chat {
-    height: 60vh;
-    overflow: auto;
-    border-radius: 15px;
-    padding: 15px;
-    background: #1f1f1f; /* couleur du chat */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    margin-bottom: 15px;
-}
-
-#chat p {
-    background: #272727; /* couleur des messages */
-    padding: 8px 12px;
-    border-radius: 12px;
-    margin: 5px 0;
-}
-
-input, button {
-    padding: 12px;
-    font-size: 1em;
-    margin: 5px 0;
-    border-radius: 12px;
-    border: none;
-    box-sizing: border-box;
-}
-
-#pseudo, #msg {
-    width: 100%;
-    max-width: 100%;
-}
-
-button {
-    width: 100%;
-    max-width: 100%;
-    background-color: #00bfff; /* bleu clair */
-    color: white;
-    cursor: pointer;
-    font-weight: bold;
-    transition: 0.2s;
-}
-
-button:hover {
-    background-color: #009acd; /* bleu foncé au hover */
-}
+body { margin:0; font-family: Arial, sans-serif; background:#121212; color:#fff; }
+h2 { text-align:center; color:#00bfff; }
+.container { max-width:600px; margin:20px auto; }
+button, input { padding:10px; border-radius:12px; border:none; margin:5px 0; width:100%; box-sizing:border-box; }
+button { background:#00bfff; color:#fff; font-weight:bold; cursor:pointer; }
+button:hover { background:#009acd; }
+#chat { height:60vh; overflow:auto; background:#1f1f1f; padding:15px; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.3); margin-bottom:10px; }
+#chat p { background:#272727; padding:8px 12px; border-radius:12px; margin:5px 0; }
+.hidden { display:none; }
 </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="menu">
 <h2>Tellurium-Chat</h2>
+<button onclick="showLogin()">Se connecter</button>
+<button onclick="showRegister()">Créer un compte</button>
+</div>
 
-<input id="pseudo" placeholder="Ton pseudo">
-<button onclick="setPseudo()">Appliquer pseudo</button>
+<div class="container hidden" id="register">
+<h2>Créer un compte</h2>
+<input id="regPseudo" placeholder="Pseudo">
+<input id="regPassword" type="password" placeholder="Mot de passe">
+<button onclick="register()">Créer</button>
+<button onclick="backMenu('register')">Retour</button>
+<p id="regMessage"></p>
+</div>
 
+<div class="container hidden" id="login">
+<h2>Se connecter</h2>
+<input id="logPseudo" placeholder="Pseudo">
+<input id="logPassword" type="password" placeholder="Mot de passe">
+<button onclick="login()">Se connecter</button>
+<button onclick="backMenu('login')">Retour</button>
+<p id="logMessage"></p>
+</div>
+
+<div class="container hidden" id="chatContainer">
+<h2>Tellurium-Chat</h2>
 <div id="chat"></div>
-
 <input id="msg" placeholder="Écris ton message">
 <button onclick="send()">Envoyer</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, get, child, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+// Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAOvOV47JhlAUS1j5IaaCToDKYUrp4xHYw",
   authDomain: "lenomioficialchat.firebaseapp.com",
@@ -101,30 +67,80 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase();
 
-let pseudo = "Invité";
+let currentPseudo = "";
 
-function setPseudo(){
-  let input = document.getElementById("pseudo").value.trim();
-  if(input !== "") pseudo = input;
-  document.getElementById("pseudo").value = "";
+// Afficher / cacher menus
+function showLogin(){document.getElementById('menu').classList.add('hidden'); document.getElementById('login').classList.remove('hidden');}
+function showRegister(){document.getElementById('menu').classList.add('hidden'); document.getElementById('register').classList.remove('hidden');}
+function backMenu(id){document.getElementById(id).classList.add('hidden'); document.getElementById('menu').classList.remove('hidden');}
+
+// Créer un compte
+async function register(){
+  const pseudo = document.getElementById('regPseudo').value.trim();
+  const password = document.getElementById('regPassword').value.trim();
+  const msg = document.getElementById('regMessage');
+  msg.textContent = "";
+
+  if(!pseudo || !password){ msg.textContent="Remplis tous les champs !"; return; }
+
+  // Vérifier si pseudo existe déjà
+  const snapshot = await get(child(ref(db), 'users'));
+  const users = snapshot.val() || {};
+  if(Object.values(users).some(u=>u.pseudo===pseudo)){
+    msg.textContent="Pseudo déjà utilisé !"; return;
+  }
+
+  // Créer compte
+  const newUserRef = ref(db,'users/'+pseudo);
+  await set(newUserRef,{ pseudo, password });
+  msg.textContent="Compte créé avec succès !";
+  document.getElementById('regPseudo').value=""; document.getElementById('regPassword').value="";
+}
+
+// Connexion
+async function login(){
+  const pseudo = document.getElementById('logPseudo').value.trim();
+  const password = document.getElementById('logPassword').value.trim();
+  const msg = document.getElementById('logMessage');
+  msg.textContent="";
+
+  if(!pseudo || !password){ msg.textContent="Remplis tous les champs !"; return; }
+
+  const snapshot = await get(child(ref(db), 'users/'+pseudo));
+  const user = snapshot.val();
+  if(!user){ msg.textContent="Pseudo introuvable !"; return; }
+  if(user.password!==password){ msg.textContent="Mot de passe incorrect !"; return; }
+
+  // Connexion OK
+  currentPseudo = pseudo;
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('chatContainer').classList.remove('hidden');
+  initChat();
+}
+
+// Chat en direct
+function initChat(){
+  const chatDiv = document.getElementById('chat');
+  onChildAdded(ref(db,'messages'), data=>{
+    const val = data.val();
+    chatDiv.innerHTML += "<p><b>"+val.pseudo+" :</b> "+val.text+"</p>";
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  });
 }
 
 function send(){
-  let msg = document.getElementById("msg").value.trim();
-  if(msg=="") return;
-  push(ref(db,"messages"), { text: msg, pseudo: pseudo });
-  document.getElementById("msg").value="";
+  const text = document.getElementById('msg').value.trim();
+  if(!text) return;
+  push(ref(db,'messages'), { pseudo: currentPseudo, text });
+  document.getElementById('msg').value="";
 }
 
-onChildAdded(ref(db,"messages"), (data)=>{
-  let chat = document.getElementById("chat");
-  let val = data.val();
-  chat.innerHTML += "<p><b>"+val.pseudo+" :</b> "+val.text+"</p>";
-  chat.scrollTop = chat.scrollHeight;
-});
-
-window.send = send;
-window.setPseudo = setPseudo;
+window.send=send;
+window.register=register;
+window.login=login;
+window.showLogin=showLogin;
+window.showRegister=showRegister;
+window.backMenu=backMenu;
 </script>
 
 </body>
