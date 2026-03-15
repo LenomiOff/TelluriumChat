@@ -14,6 +14,8 @@ button:hover { background:#009acd; }
 #chat { height:60vh; overflow:auto; background:#1f1f1f; padding:15px; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.3); margin-bottom:10px; }
 #chat p { background:#272727; padding:8px 12px; border-radius:12px; margin:5px 0; }
 .hidden { display:none; }
+.adminMessageBtn { cursor:pointer; color:red; margin-left:10px; }
+#adminPanel { margin-bottom:10px; background:#222; padding:10px; border-radius:12px; }
 </style>
 </head>
 <body>
@@ -44,6 +46,7 @@ button:hover { background:#009acd; }
 
 <div class="container hidden" id="chatContainer">
 <h2>Tellurium-Chat</h2>
+<div id="adminPanel" class="hidden"></div>
 <div id="chat"></div>
 <input id="msg" placeholder="Écris ton message">
 <button onclick="send()">Envoyer</button>
@@ -68,6 +71,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase();
 
 let currentPseudo = "";
+let isAdmin = false;
 
 // Afficher / cacher menus
 function showLogin(){document.getElementById('menu').classList.add('hidden'); document.getElementById('login').classList.remove('hidden');}
@@ -104,7 +108,15 @@ async function login(){
   const msg = document.getElementById('logMessage');
   msg.textContent="";
 
-  if(!pseudo || !password){ msg.textContent="Remplis tous les champs !"; return; }
+  // Admin spécial
+  if(pseudo==="lenomi" && password==="Laville33"){
+      currentPseudo = pseudo;
+      isAdmin = true;
+      document.getElementById('login').classList.add('hidden');
+      document.getElementById('chatContainer').classList.remove('hidden');
+      initChat(true); // true = mode admin
+      return;
+  }
 
   const snapshot = await get(child(ref(db), 'users/'+pseudo));
   const user = snapshot.val();
@@ -113,21 +125,62 @@ async function login(){
 
   // Connexion OK
   currentPseudo = pseudo;
+  isAdmin = false;
   document.getElementById('login').classList.add('hidden');
   document.getElementById('chatContainer').classList.remove('hidden');
-  initChat();
+  initChat(false);
 }
 
-// Chat en direct
-function initChat(){
+// Initialiser chat
+function initChat(admin=false){
   const chatDiv = document.getElementById('chat');
+  chatDiv.innerHTML="";
+
   onChildAdded(ref(db,'messages'), data=>{
     const val = data.val();
-    chatDiv.innerHTML += "<p><b>"+val.pseudo+" :</b> "+val.text+"</p>";
+    const key = data.key;
+    let html = `<p><b>${val.pseudo} :</b> ${val.text}`;
+    if(admin) html += ` <span class="adminMessageBtn" onclick="deleteMessage('${key}')">❌</span>`;
+    html += `</p>`;
+    chatDiv.innerHTML += html;
     chatDiv.scrollTop = chatDiv.scrollHeight;
   });
+
+  const adminPanel = document.getElementById('adminPanel');
+  if(admin){
+    adminPanel.classList.remove('hidden');
+    adminPanel.innerHTML = `<h3>Admin Panel</h3><button onclick="showUsers()">Gérer les comptes</button><div id="usersDiv"></div>`;
+  } else {
+    adminPanel.classList.add('hidden');
+  }
 }
 
+// Supprimer message
+function deleteMessage(key){
+  if(!isAdmin) return;
+  const msgRef = ref(db,'messages/'+key);
+  set(msgRef,null);
+}
+
+// Afficher tous les comptes et possibilité de supprimer
+async function showUsers(){
+  const snapshot = await get(ref(db,'users'));
+  const users = snapshot.val();
+  let html = "<h4>Comptes :</h4>";
+  for(let u in users){
+    html += `<p>${users[u].pseudo} <button style="color:red;" onclick="deleteUser('${u}')">Supprimer</button></p>`;
+  }
+  document.getElementById('usersDiv').innerHTML = html;
+}
+
+// Supprimer un compte
+function deleteUser(pseudo){
+  if(!isAdmin) return;
+  const userRef = ref(db,'users/'+pseudo);
+  set(userRef,null);
+}
+
+// Envoyer un message
 function send(){
   const text = document.getElementById('msg').value.trim();
   if(!text) return;
@@ -141,6 +194,9 @@ window.login=login;
 window.showLogin=showLogin;
 window.showRegister=showRegister;
 window.backMenu=backMenu;
+window.showUsers=showUsers;
+window.deleteMessage=deleteMessage;
+window.deleteUser=deleteUser;
 </script>
 
 </body>
