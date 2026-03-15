@@ -56,7 +56,7 @@ button:hover { background:#009acd; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, get, child, set, onChildRemoved } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, onChildRemoved, get, child, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // Config Firebase
 const firebaseConfig = {
@@ -144,9 +144,10 @@ function initChat(admin=false){
 
   const onlineDiv = document.getElementById('onlineCount');
   const onlineRef = ref(db,'onlineUsers');
+
+  // Listener online
   onChildAdded(onlineRef,updateOnlineCount);
   onChildRemoved(onlineRef,updateOnlineCount);
-
   function updateOnlineCount(){
     get(onlineRef).then(snap=>{
       const val = snap.val() || {};
@@ -154,25 +155,32 @@ function initChat(admin=false){
     });
   }
 
-  onChildAdded(ref(db,'messages'), data=>{
+  // Messages en direct
+  const messagesRef = ref(db,'messages');
+  onChildAdded(messagesRef, data=>{
     const val = data.val();
     const key = data.key;
     let displayPseudo = val.pseudo;
     if(val.pseudo==="lenomi") displayPseudo = rainbowText(val.pseudo);
-    let html = `<p><b>${displayPseudo} :</b> ${val.text}`;
+    let html = `<p id="msg-${key}"><b>${displayPseudo} :</b> ${val.text}`;
     if(admin) html += ` <span class="adminMessageBtn" onclick="deleteMessage('${key}')">❌</span>`;
     html += `</p>`;
     chatDiv.innerHTML += html;
     chatDiv.scrollTop = chatDiv.scrollHeight;
   });
 
+  onChildRemoved(messagesRef, data=>{
+    const key = data.key;
+    const msgElem = document.getElementById('msg-'+key);
+    if(msgElem) msgElem.remove();
+  });
+
+  // Admin panel
   const adminPanel = document.getElementById('adminPanel');
   if(admin){
     adminPanel.classList.remove('hidden');
     adminPanel.innerHTML = `<h3>Admin Panel</h3><button onclick="showUsers()">Gérer les comptes</button><div id="usersDiv"></div>`;
-  } else {
-    adminPanel.classList.add('hidden');
-  }
+  } else { adminPanel.classList.add('hidden'); }
 }
 
 // Supprimer message
@@ -190,7 +198,12 @@ async function showUsers(){
 }
 
 // Supprimer compte
-function deleteUser(pseudo){ if(!isAdmin) return; set(ref(db,'users/'+pseudo),null); }
+function deleteUser(pseudo){
+  if(!isAdmin) return;
+  set(ref(db,'users/'+pseudo),null);
+  set(ref(db,'onlineUsers/'+pseudo),null);
+  if(currentPseudo===pseudo){ alert("Ton compte a été supprimé par l'admin !"); location.reload(); }
+}
 
 // Envoyer message
 function send(){
@@ -201,13 +214,12 @@ function send(){
 }
 
 // Supprimer online à la fermeture
-window.onbeforeunload = () => {
-  if(!isAdmin) set(ref(db,'onlineUsers/'+currentPseudo),null);
-};
+window.onbeforeunload = () => { if(!isAdmin) set(ref(db,'onlineUsers/'+currentPseudo),null); };
 
 window.send=send; window.register=register; window.login=login;
 window.showLogin=showLogin; window.showRegister=showRegister; window.backMenu=backMenu;
 window.showUsers=showUsers; window.deleteMessage=deleteMessage; window.deleteUser=deleteUser;
+
 </script>
 
 </body>
