@@ -2,31 +2,78 @@
 <html>
 <head>
 <title>Tellurium-Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body { font-family: Arial; background: #1e1e1e; color: white; }
-#chat { height: 300px; overflow: auto; border: 1px solid gray; padding: 10px; margin-bottom:10px;}
-input { width: 70%; margin-bottom:5px; }
-button { width: 28%; margin-left:2%; margin-bottom:5px; }
+body {
+    font-family: Arial, sans-serif;
+    background: #1e1e1e;
+    color: white;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
+}
+h2 { text-align: center; }
+
+#chat {
+    height: 60vh; /* 60% de la hauteur de la fenêtre */
+    overflow: auto;
+    border: 1px solid gray;
+    padding: 10px;
+    margin-bottom:10px;
+    border-radius: 5px;
+    background: #2a2a2a;
+}
+
+input, button {
+    padding: 10px;
+    font-size: 1em;
+    margin: 5px 0;
+    border-radius: 5px;
+    border: none;
+    box-sizing: border-box;
+}
+
+#pseudo, #msg {
+    width: 100%;
+    max-width: 100%;
+}
+
+button {
+    width: 100%;
+    max-width: 100%;
+    background-color: #3a3a3a;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #505050;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+}
 </style>
 </head>
 <body>
 
+<div class="container">
 <h2>Tellurium-Chat</h2>
 
-<!-- Choix du pseudo -->
 <input id="pseudo" placeholder="Ton pseudo">
 <button onclick="setPseudo()">Appliquer pseudo</button>
 
-<!-- Chat -->
 <div id="chat"></div>
+
 <input id="msg" placeholder="Écris ton message">
 <button onclick="send()">Envoyer</button>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// 🔹 Configuration Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAOvOV47JhlAUS1j5IaaCToDKYUrp4xHYw",
   authDomain: "lenomioficialchat.firebaseapp.com",
@@ -40,17 +87,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase();
 
-// variable pour stocker le pseudo
 let pseudo = "Invité";
 
-// Fonction pour appliquer le pseudo
 function setPseudo(){
   let input = document.getElementById("pseudo").value.trim();
   if(input !== "") pseudo = input;
   document.getElementById("pseudo").value = "";
 }
 
-// Envoyer un message
 function send(){
   let msg = document.getElementById("msg").value.trim();
   if(msg=="") return;
@@ -58,7 +102,6 @@ function send(){
   document.getElementById("msg").value="";
 }
 
-// Afficher les messages en temps réel
 onChildAdded(ref(db,"messages"), (data)=>{
   let chat = document.getElementById("chat");
   let val = data.val();
