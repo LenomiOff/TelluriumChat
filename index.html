@@ -11,11 +11,12 @@ h2 { text-align:center; color:#00bfff; }
 button, input { padding:10px; border-radius:12px; border:none; margin:5px 0; width:100%; box-sizing:border-box; }
 button { background:#00bfff; color:#fff; font-weight:bold; cursor:pointer; }
 button:hover { background:#009acd; }
-#chat { height:60vh; overflow:auto; background:#1f1f1f; padding:15px; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.3); margin-bottom:10px; }
+#chat { height:50vh; overflow:auto; background:#1f1f1f; padding:15px; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.3); margin-bottom:10px; }
 #chat p { background:#272727; padding:8px 12px; border-radius:12px; margin:5px 0; }
 .hidden { display:none; }
 .adminMessageBtn { cursor:pointer; color:red; margin-left:10px; }
 #adminPanel { margin-bottom:10px; background:#222; padding:10px; border-radius:12px; }
+#onlineCount, #version { text-align:center; color:#aaa; margin:5px 0; }
 </style>
 </head>
 <body>
@@ -24,6 +25,7 @@ button:hover { background:#009acd; }
 <h2>Tellurium-Chat</h2>
 <button onclick="showLogin()">Se connecter</button>
 <button onclick="showRegister()">Créer un compte</button>
+<div id="version">Version : 1.0.0</div>
 </div>
 
 <div class="container hidden" id="register">
@@ -45,8 +47,8 @@ button:hover { background:#009acd; }
 </div>
 
 <div class="container hidden" id="chatContainer">
-<h2>Tellurium-Chat</h2>
 <div id="adminPanel" class="hidden"></div>
+<div id="onlineCount"></div>
 <div id="chat"></div>
 <input id="msg" placeholder="Écris ton message">
 <button onclick="send()">Envoyer</button>
@@ -54,7 +56,7 @@ button:hover { background:#009acd; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, get, child, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, get, child, set, onChildRemoved } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // Config Firebase
 const firebaseConfig = {
@@ -73,28 +75,23 @@ const db = getDatabase();
 let currentPseudo = "";
 let isAdmin = false;
 
-// Afficher / cacher menus
+// Menu affichage
 function showLogin(){document.getElementById('menu').classList.add('hidden'); document.getElementById('login').classList.remove('hidden');}
 function showRegister(){document.getElementById('menu').classList.add('hidden'); document.getElementById('register').classList.remove('hidden');}
 function backMenu(id){document.getElementById(id).classList.add('hidden'); document.getElementById('menu').classList.remove('hidden');}
 
-// Créer un compte
+// Créer compte
 async function register(){
   const pseudo = document.getElementById('regPseudo').value.trim();
   const password = document.getElementById('regPassword').value.trim();
   const msg = document.getElementById('regMessage');
   msg.textContent = "";
-
   if(!pseudo || !password){ msg.textContent="Remplis tous les champs !"; return; }
 
-  // Vérifier si pseudo existe déjà
   const snapshot = await get(child(ref(db), 'users'));
   const users = snapshot.val() || {};
-  if(Object.values(users).some(u=>u.pseudo===pseudo)){
-    msg.textContent="Pseudo déjà utilisé !"; return;
-  }
+  if(Object.values(users).some(u=>u.pseudo===pseudo)){ msg.textContent="Pseudo déjà utilisé !"; return; }
 
-  // Créer compte
   const newUserRef = ref(db,'users/'+pseudo);
   await set(newUserRef,{ pseudo, password });
   msg.textContent="Compte créé avec succès !";
@@ -108,13 +105,13 @@ async function login(){
   const msg = document.getElementById('logMessage');
   msg.textContent="";
 
-  // Admin spécial
+  // Admin hardcodé
   if(pseudo==="lenomi" && password==="Laville33"){
       currentPseudo = pseudo;
       isAdmin = true;
       document.getElementById('login').classList.add('hidden');
       document.getElementById('chatContainer').classList.remove('hidden');
-      initChat(true); // true = mode admin
+      initChat(true);
       return;
   }
 
@@ -123,12 +120,21 @@ async function login(){
   if(!user){ msg.textContent="Pseudo introuvable !"; return; }
   if(user.password!==password){ msg.textContent="Mot de passe incorrect !"; return; }
 
-  // Connexion OK
   currentPseudo = pseudo;
   isAdmin = false;
   document.getElementById('login').classList.add('hidden');
   document.getElementById('chatContainer').classList.remove('hidden');
+
+  set(ref(db,'onlineUsers/'+currentPseudo),true);
   initChat(false);
+}
+
+// Rainbow pseudo
+function rainbowText(text){
+  const colors = ["#FF0000","#FF7F00","#FFFF00","#00FF00","#0000FF","#4B0082","#8B00FF"];
+  let html = "";
+  for(let i=0;i<text.length;i++){ html += `<span style="color:${colors[i%colors.length]}; font-weight:bold;">${text[i]}</span>`; }
+  return html;
 }
 
 // Initialiser chat
@@ -136,10 +142,24 @@ function initChat(admin=false){
   const chatDiv = document.getElementById('chat');
   chatDiv.innerHTML="";
 
+  const onlineDiv = document.getElementById('onlineCount');
+  const onlineRef = ref(db,'onlineUsers');
+  onChildAdded(onlineRef,updateOnlineCount);
+  onChildRemoved(onlineRef,updateOnlineCount);
+
+  function updateOnlineCount(){
+    get(onlineRef).then(snap=>{
+      const val = snap.val() || {};
+      onlineDiv.textContent = "Personnes en ligne : " + Object.keys(val).length;
+    });
+  }
+
   onChildAdded(ref(db,'messages'), data=>{
     const val = data.val();
     const key = data.key;
-    let html = `<p><b>${val.pseudo} :</b> ${val.text}`;
+    let displayPseudo = val.pseudo;
+    if(val.pseudo==="lenomi") displayPseudo = rainbowText(val.pseudo);
+    let html = `<p><b>${displayPseudo} :</b> ${val.text}`;
     if(admin) html += ` <span class="adminMessageBtn" onclick="deleteMessage('${key}')">❌</span>`;
     html += `</p>`;
     chatDiv.innerHTML += html;
@@ -156,13 +176,9 @@ function initChat(admin=false){
 }
 
 // Supprimer message
-function deleteMessage(key){
-  if(!isAdmin) return;
-  const msgRef = ref(db,'messages/'+key);
-  set(msgRef,null);
-}
+function deleteMessage(key){ if(!isAdmin) return; set(ref(db,'messages/'+key),null); }
 
-// Afficher tous les comptes et possibilité de supprimer
+// Afficher comptes
 async function showUsers(){
   const snapshot = await get(ref(db,'users'));
   const users = snapshot.val();
@@ -173,14 +189,10 @@ async function showUsers(){
   document.getElementById('usersDiv').innerHTML = html;
 }
 
-// Supprimer un compte
-function deleteUser(pseudo){
-  if(!isAdmin) return;
-  const userRef = ref(db,'users/'+pseudo);
-  set(userRef,null);
-}
+// Supprimer compte
+function deleteUser(pseudo){ if(!isAdmin) return; set(ref(db,'users/'+pseudo),null); }
 
-// Envoyer un message
+// Envoyer message
 function send(){
   const text = document.getElementById('msg').value.trim();
   if(!text) return;
@@ -188,15 +200,14 @@ function send(){
   document.getElementById('msg').value="";
 }
 
-window.send=send;
-window.register=register;
-window.login=login;
-window.showLogin=showLogin;
-window.showRegister=showRegister;
-window.backMenu=backMenu;
-window.showUsers=showUsers;
-window.deleteMessage=deleteMessage;
-window.deleteUser=deleteUser;
+// Supprimer online à la fermeture
+window.onbeforeunload = () => {
+  if(!isAdmin) set(ref(db,'onlineUsers/'+currentPseudo),null);
+};
+
+window.send=send; window.register=register; window.login=login;
+window.showLogin=showLogin; window.showRegister=showRegister; window.backMenu=backMenu;
+window.showUsers=showUsers; window.deleteMessage=deleteMessage; window.deleteUser=deleteUser;
 </script>
 
 </body>
