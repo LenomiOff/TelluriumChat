@@ -5,17 +5,60 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tellurium-Chat</title>
 <style>
-body { margin:0; font-family: Arial, sans-serif; background:#121212; color:#fff; }
+body {
+  margin:0;
+  font-family: Arial, sans-serif;
+  background: #18191c;
+  color: #fff;
+}
 h2 { text-align:center; color:#00bfff; }
-.container { max-width:600px; margin:20px auto; }
-button, input { padding:10px; border-radius:12px; border:none; margin:5px 0; width:100%; box-sizing:border-box; }
-button { background:#00bfff; color:#fff; font-weight:bold; cursor:pointer; }
-button:hover { background:#009acd; }
-#chat { height:50vh; overflow:auto; background:#1f1f1f; padding:15px; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.3); margin-bottom:10px; }
-#chat p { background:#272727; padding:8px 12px; border-radius:12px; margin:5px 0; }
+.container {
+  max-width:600px;
+  margin:20px auto;
+  padding:20px;
+  border-radius:15px;
+  background: rgba(32,34,37,0.85);
+  box-shadow:0 4px 10px rgba(0,0,0,0.3);
+}
+button, input {
+  padding:10px;
+  border-radius:12px;
+  border:none;
+  margin:5px 0;
+  width:100%;
+  box-sizing:border-box;
+}
+button {
+  background:#5865f2;
+  color:#fff;
+  font-weight:bold;
+  cursor:pointer;
+}
+button:hover { background:#4752c4; }
+#chat {
+  height:50vh;
+  overflow:auto;
+  background: rgba(47,49,54,0.85);
+  padding:15px;
+  border-radius:15px;
+  margin-bottom:10px;
+}
+#chat p {
+  background:#36393f;
+  padding:10px 15px;
+  border-radius:15px;
+  margin:5px 0;
+  display:flex;
+  align-items:center;
+  word-break:break-word;
+}
+#chat b {
+  color:#00bfff;
+  margin-right:10px;
+}
 .hidden { display:none; }
 .adminMessageBtn { cursor:pointer; color:red; margin-left:10px; }
-#adminPanel { margin-bottom:10px; background:#222; padding:10px; border-radius:12px; }
+#adminPanel { margin-bottom:10px; background:#2f3136; padding:10px; border-radius:12px; }
 #onlineCount, #version { text-align:center; color:#aaa; margin:5px 0; }
 </style>
 </head>
@@ -25,7 +68,7 @@ button:hover { background:#009acd; }
 <h2>Tellurium-Chat</h2>
 <button onclick="showLogin()">Se connecter</button>
 <button onclick="showRegister()">Créer un compte</button>
-<div id="version">Version : 1.0.0</div>
+<div id="version">Version : 1.1.0</div>
 </div>
 
 <div class="container hidden" id="register">
@@ -112,6 +155,7 @@ async function login(){
       document.getElementById('login').classList.add('hidden');
       document.getElementById('chatContainer').classList.remove('hidden');
       initChat(true);
+      listenAccountDeletion(); // admin ne sera jamais supprimé ici
       return;
   }
 
@@ -127,6 +171,7 @@ async function login(){
 
   set(ref(db,'onlineUsers/'+currentPseudo),true);
   initChat(false);
+  listenAccountDeletion(); // pour être kick si supprimé
 }
 
 // Rainbow pseudo
@@ -202,7 +247,6 @@ function deleteUser(pseudo){
   if(!isAdmin) return;
   set(ref(db,'users/'+pseudo),null);
   set(ref(db,'onlineUsers/'+pseudo),null);
-  if(currentPseudo===pseudo){ alert("Ton compte a été supprimé par l'admin !"); location.reload(); }
 }
 
 // Envoyer message
@@ -213,13 +257,25 @@ function send(){
   document.getElementById('msg').value="";
 }
 
+// Listener pour être kick si compte supprimé
+function listenAccountDeletion(){
+  const userRef = ref(db,'users/'+currentPseudo);
+  onChildRemoved(userRef, () => {
+    document.getElementById('chatContainer').innerHTML = `
+      <div style="text-align:center; padding:50px; background: rgba(47,49,54,0.85); border-radius:15px; color:#fff;">
+        <h2>Votre compte a été supprimé !</h2>
+        <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; border-radius:12px; border:none; background:#5865f2; color:#fff; font-weight:bold; cursor:pointer;">Recharger</button>
+      </div>
+    `;
+  });
+}
+
 // Supprimer online à la fermeture
 window.onbeforeunload = () => { if(!isAdmin) set(ref(db,'onlineUsers/'+currentPseudo),null); };
 
 window.send=send; window.register=register; window.login=login;
 window.showLogin=showLogin; window.showRegister=showRegister; window.backMenu=backMenu;
 window.showUsers=showUsers; window.deleteMessage=deleteMessage; window.deleteUser=deleteUser;
-
 </script>
 
 </body>
