@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tellurium-Chat</title>
+<style>
+body { font-family: Arial; background: #1e1e1e; color: white; }
+#chat { height: 300px; overflow: auto; border: 1px solid gray; padding: 10px; margin-bottom:10px;}
+input { width: 70%; margin-bottom:5px; }
+button { width: 28%; margin-left:2%; margin-bottom:5px; }
+</style>
+</head>
+<body>
+
+<h2>Tellurium-Chat</h2>
+
+<!-- Choix du pseudo -->
+<input id="pseudo" placeholder="Ton pseudo">
+<button onclick="setPseudo()">Appliquer pseudo</button>
+
+<!-- Chat -->
+<div id="chat"></div>
+<input id="msg" placeholder="Écris ton message">
+<button onclick="send()">Envoyer</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// 🔹 Configuration Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAOvOV47JhlAUS1j5IaaCToDKYUrp4xHYw",
+  authDomain: "lenomioficialchat.firebaseapp.com",
+  databaseURL: "https://lenomioficialchat-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "lenomioficialchat",
+  storageBucket: "lenomioficialchat.firebasestorage.app",
+  messagingSenderId: "501612652553",
+  appId: "1:501612652553:web:2aa454ea5378e6a079f0d8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase();
+
+// variable pour stocker le pseudo
+let pseudo = "Invité";
+
+// Fonction pour appliquer le pseudo
+function setPseudo(){
+  let input = document.getElementById("pseudo").value.trim();
+  if(input !== "") pseudo = input;
+  document.getElementById("pseudo").value = "";
+}
+
+// Envoyer un message
+function send(){
+  let msg = document.getElementById("msg").value.trim();
+  if(msg=="") return;
+  push(ref(db,"messages"), { text: msg, pseudo: pseudo });
+  document.getElementById("msg").value="";
+}
+
+// Afficher les messages en temps réel
+onChildAdded(ref(db,"messages"), (data)=>{
+  let chat = document.getElementById("chat");
+  let val = data.val();
+  chat.innerHTML += "<p><b>"+val.pseudo+" :</b> "+val.text+"</p>";
+  chat.scrollTop = chat.scrollHeight;
+});
+
+window.send = send;
+window.setPseudo = setPseudo;
+</script>
+
+</body>
+</html>
