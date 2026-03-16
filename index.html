@@ -3,279 +3,375 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tellurium-Chat</title>
+<title>Tellurium Chat</title>
+
 <style>
-body {
-  margin:0;
-  font-family: Arial, sans-serif;
-  background: #18191c;
-  color: #fff;
+
+body{
+margin:0;
+font-family:Arial;
+background:#36393f;
+color:white;
 }
-h2 { text-align:center; color:#00bfff; }
-.container {
-  max-width:600px;
-  margin:20px auto;
-  padding:20px;
-  border-radius:15px;
-  background: rgba(32,34,37,0.85);
-  box-shadow:0 4px 10px rgba(0,0,0,0.3);
+
+/* LOGIN */
+
+.authBox{
+width:350px;
+background:#2f3136;
+padding:30px;
+border-radius:10px;
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
 }
-button, input {
-  padding:10px;
-  border-radius:12px;
-  border:none;
-  margin:5px 0;
-  width:100%;
-  box-sizing:border-box;
+
+.authBox h2{
+text-align:center;
 }
-button {
-  background:#5865f2;
-  color:#fff;
-  font-weight:bold;
-  cursor:pointer;
+
+.authBox input{
+width:100%;
+padding:10px;
+margin-top:10px;
+border:none;
+border-radius:5px;
+background:#202225;
+color:white;
 }
-button:hover { background:#4752c4; }
-#chat {
-  height:50vh;
-  overflow:auto;
-  background: rgba(47,49,54,0.85);
-  padding:15px;
-  border-radius:15px;
-  margin-bottom:10px;
+
+.authBox button{
+width:100%;
+padding:10px;
+margin-top:15px;
+border:none;
+border-radius:5px;
+background:#5865f2;
+color:white;
+font-weight:bold;
+cursor:pointer;
 }
-#chat p {
-  background:#36393f;
-  padding:10px 15px;
-  border-radius:15px;
-  margin:5px 0;
-  display:flex;
-  align-items:center;
-  word-break:break-word;
+
+.authBox button:hover{
+background:#4752c4;
 }
-#chat b {
-  color:#00bfff;
-  margin-right:10px;
+
+.link{
+margin-top:10px;
+text-align:center;
+font-size:13px;
 }
-.hidden { display:none; }
-.adminMessageBtn { cursor:pointer; color:red; margin-left:10px; }
-#adminPanel { margin-bottom:10px; background:#2f3136; padding:10px; border-radius:12px; }
-#onlineCount, #version { text-align:center; color:#aaa; margin:5px 0; }
+
+.link span{
+color:#00b0f4;
+text-decoration:underline;
+cursor:pointer;
+}
+
+/* APP */
+
+#app{
+display:none;
+height:100vh;
+}
+
+/* CHANNEL LIST */
+
+#channels{
+width:230px;
+background:#2f3136;
+padding:10px;
+box-sizing:border-box;
+overflow:auto;
+}
+
+.channel{
+padding:8px;
+border-radius:5px;
+cursor:pointer;
+}
+
+.channel:hover{
+background:#40444b;
+}
+
+/* CHAT */
+
+#chatArea{
+flex:1;
+display:flex;
+flex-direction:column;
+}
+
+#messages{
+flex:1;
+overflow:auto;
+padding:15px;
+}
+
+.message{
+background:#40444b;
+padding:8px 12px;
+border-radius:8px;
+margin-bottom:6px;
+}
+
+#sendBar{
+display:flex;
+padding:10px;
+background:#40444b;
+}
+
+#sendBar input{
+flex:1;
+padding:10px;
+border:none;
+border-radius:5px;
+background:#2f3136;
+color:white;
+}
+
 </style>
 </head>
+
 <body>
 
-<div class="container" id="menu">
-<h2>Tellurium-Chat</h2>
-<button onclick="showLogin()">Se connecter</button>
-<button onclick="showRegister()">Créer un compte</button>
-<div id="version">Version : 1.1.0</div>
-</div>
+<!-- LOGIN -->
 
-<div class="container hidden" id="register">
-<h2>Créer un compte</h2>
-<input id="regPseudo" placeholder="Pseudo">
-<input id="regPassword" type="password" placeholder="Mot de passe">
-<button onclick="register()">Créer</button>
-<button onclick="backMenu('register')">Retour</button>
-<p id="regMessage"></p>
-</div>
+<div class="authBox" id="loginBox">
 
-<div class="container hidden" id="login">
-<h2>Se connecter</h2>
-<input id="logPseudo" placeholder="Pseudo">
-<input id="logPassword" type="password" placeholder="Mot de passe">
+<h2>Connexion</h2>
+
+<input id="loginPseudo" placeholder="Pseudo">
+<input id="loginPass" type="password" placeholder="Mot de passe">
+
 <button onclick="login()">Se connecter</button>
-<button onclick="backMenu('login')">Retour</button>
-<p id="logMessage"></p>
+
+<div class="link">
+Vous n'avez pas de compte ?
+<span onclick="showRegister()">Créez-en un</span>
 </div>
 
-<div class="container hidden" id="chatContainer">
-<div id="adminPanel" class="hidden"></div>
-<div id="onlineCount"></div>
-<div id="chat"></div>
-<input id="msg" placeholder="Écris ton message">
-<button onclick="send()">Envoyer</button>
 </div>
+
+
+<!-- REGISTER -->
+
+<div class="authBox" id="registerBox" style="display:none">
+
+<h2>Créer un compte</h2>
+
+<input id="regPseudo" placeholder="Pseudo">
+<input id="regPass" type="password" placeholder="Mot de passe">
+
+<button onclick="register()">Créer</button>
+
+<button onclick="backLogin()">Retour</button>
+
+</div>
+
+
+<!-- APP -->
+
+<div id="app">
+
+<div id="channels">
+
+<h3>Salons</h3>
+
+<div id="channelList"></div>
+
+<button onclick="createChannel()">Créer un salon</button>
+
+</div>
+
+<div id="chatArea">
+
+<div id="messages"></div>
+
+<div id="sendBar">
+<input id="msgInput" placeholder="Envoyer un message">
+</div>
+
+</div>
+
+</div>
+
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, onChildRemoved, get, child, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// Config Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyAOvOV47JhlAUS1j5IaaCToDKYUrp4xHYw",
-  authDomain: "lenomioficialchat.firebaseapp.com",
-  databaseURL: "https://lenomioficialchat-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "lenomioficialchat",
-  storageBucket: "lenomioficialchat.firebasestorage.app",
-  messagingSenderId: "501612652553",
-  appId: "1:501612652553:web:2aa454ea5378e6a079f0d8"
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+import {
+getDatabase,
+ref,
+push,
+set,
+get,
+onChildAdded,
+onChildRemoved
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+
+const firebaseConfig={
+apiKey:"AIzaSyAOvOV47JhlAUS1j5IaaCToDKYUrp4xHYw",
+authDomain:"lenomioficialchat.firebaseapp.com",
+databaseURL:"https://lenomioficialchat-default-rtdb.europe-west1.firebasedatabase.app",
+projectId:"lenomioficialchat"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase();
+const app=initializeApp(firebaseConfig);
+const db=getDatabase();
 
-let currentPseudo = "";
-let isAdmin = false;
+let pseudo=""
+let currentChannel=""
 
-// Menu affichage
-function showLogin(){document.getElementById('menu').classList.add('hidden'); document.getElementById('login').classList.remove('hidden');}
-function showRegister(){document.getElementById('menu').classList.add('hidden'); document.getElementById('register').classList.remove('hidden');}
-function backMenu(id){document.getElementById(id).classList.add('hidden'); document.getElementById('menu').classList.remove('hidden');}
+/* LOGIN */
 
-// Créer compte
-async function register(){
-  const pseudo = document.getElementById('regPseudo').value.trim();
-  const password = document.getElementById('regPassword').value.trim();
-  const msg = document.getElementById('regMessage');
-  msg.textContent = "";
-  if(!pseudo || !password){ msg.textContent="Remplis tous les champs !"; return; }
+window.login=async function(){
 
-  const snapshot = await get(child(ref(db), 'users'));
-  const users = snapshot.val() || {};
-  if(Object.values(users).some(u=>u.pseudo===pseudo)){ msg.textContent="Pseudo déjà utilisé !"; return; }
+let p=document.getElementById("loginPseudo").value
+let pass=document.getElementById("loginPass").value
 
-  const newUserRef = ref(db,'users/'+pseudo);
-  await set(newUserRef,{ pseudo, password });
-  msg.textContent="Compte créé avec succès !";
-  document.getElementById('regPseudo').value=""; document.getElementById('regPassword').value="";
+let snap=await get(ref(db,"users/"+p))
+
+if(!snap.exists()) return alert("Compte introuvable")
+
+if(snap.val().password!=pass) return alert("Mot de passe incorrect")
+
+pseudo=p
+
+document.getElementById("loginBox").style.display="none"
+document.getElementById("app").style.display="flex"
+
+loadChannels()
+
 }
 
-// Connexion
-async function login(){
-  const pseudo = document.getElementById('logPseudo').value.trim();
-  const password = document.getElementById('logPassword').value.trim();
-  const msg = document.getElementById('logMessage');
-  msg.textContent="";
+/* REGISTER */
 
-  // Admin hardcodé
-  if(pseudo==="lenomi" && password==="Laville33"){
-      currentPseudo = pseudo;
-      isAdmin = true;
-      document.getElementById('login').classList.add('hidden');
-      document.getElementById('chatContainer').classList.remove('hidden');
-      initChat(true);
-      listenAccountDeletion(); // admin ne sera jamais supprimé ici
-      return;
-  }
+window.register=async function(){
 
-  const snapshot = await get(child(ref(db), 'users/'+pseudo));
-  const user = snapshot.val();
-  if(!user){ msg.textContent="Pseudo introuvable !"; return; }
-  if(user.password!==password){ msg.textContent="Mot de passe incorrect !"; return; }
+let p=document.getElementById("regPseudo").value
+let pass=document.getElementById("regPass").value
 
-  currentPseudo = pseudo;
-  isAdmin = false;
-  document.getElementById('login').classList.add('hidden');
-  document.getElementById('chatContainer').classList.remove('hidden');
+await set(ref(db,"users/"+p),{
+password:pass
+})
 
-  set(ref(db,'onlineUsers/'+currentPseudo),true);
-  initChat(false);
-  listenAccountDeletion(); // pour être kick si supprimé
+alert("Compte créé")
+
+backLogin()
+
 }
 
-// Rainbow pseudo
-function rainbowText(text){
-  const colors = ["#FF0000","#FF7F00","#FFFF00","#00FF00","#0000FF","#4B0082","#8B00FF"];
-  let html = "";
-  for(let i=0;i<text.length;i++){ html += `<span style="color:${colors[i%colors.length]}; font-weight:bold;">${text[i]}</span>`; }
-  return html;
+window.showRegister=function(){
+document.getElementById("loginBox").style.display="none"
+document.getElementById("registerBox").style.display="block"
 }
 
-// Initialiser chat
-function initChat(admin=false){
-  const chatDiv = document.getElementById('chat');
-  chatDiv.innerHTML="";
-
-  const onlineDiv = document.getElementById('onlineCount');
-  const onlineRef = ref(db,'onlineUsers');
-
-  // Listener online
-  onChildAdded(onlineRef,updateOnlineCount);
-  onChildRemoved(onlineRef,updateOnlineCount);
-  function updateOnlineCount(){
-    get(onlineRef).then(snap=>{
-      const val = snap.val() || {};
-      onlineDiv.textContent = "Personnes en ligne : " + Object.keys(val).length;
-    });
-  }
-
-  // Messages en direct
-  const messagesRef = ref(db,'messages');
-  onChildAdded(messagesRef, data=>{
-    const val = data.val();
-    const key = data.key;
-    let displayPseudo = val.pseudo;
-    if(val.pseudo==="lenomi") displayPseudo = rainbowText(val.pseudo);
-    let html = `<p id="msg-${key}"><b>${displayPseudo} :</b> ${val.text}`;
-    if(admin) html += ` <span class="adminMessageBtn" onclick="deleteMessage('${key}')">❌</span>`;
-    html += `</p>`;
-    chatDiv.innerHTML += html;
-    chatDiv.scrollTop = chatDiv.scrollHeight;
-  });
-
-  onChildRemoved(messagesRef, data=>{
-    const key = data.key;
-    const msgElem = document.getElementById('msg-'+key);
-    if(msgElem) msgElem.remove();
-  });
-
-  // Admin panel
-  const adminPanel = document.getElementById('adminPanel');
-  if(admin){
-    adminPanel.classList.remove('hidden');
-    adminPanel.innerHTML = `<h3>Admin Panel</h3><button onclick="showUsers()">Gérer les comptes</button><div id="usersDiv"></div>`;
-  } else { adminPanel.classList.add('hidden'); }
+window.backLogin=function(){
+document.getElementById("registerBox").style.display="none"
+document.getElementById("loginBox").style.display="block"
 }
 
-// Supprimer message
-function deleteMessage(key){ if(!isAdmin) return; set(ref(db,'messages/'+key),null); }
 
-// Afficher comptes
-async function showUsers(){
-  const snapshot = await get(ref(db,'users'));
-  const users = snapshot.val();
-  let html = "<h4>Comptes :</h4>";
-  for(let u in users){
-    html += `<p>${users[u].pseudo} <button style="color:red;" onclick="deleteUser('${u}')">Supprimer</button></p>`;
-  }
-  document.getElementById('usersDiv').innerHTML = html;
+/* CHANNELS */
+
+function loadChannels(){
+
+const list=document.getElementById("channelList")
+
+onChildAdded(ref(db,"channels"),data=>{
+
+let name=data.key
+
+let div=document.createElement("div")
+
+div.className="channel"
+
+div.innerText="# "+name
+
+div.onclick=()=>openChannel(name)
+
+list.appendChild(div)
+
+})
+
 }
 
-// Supprimer compte
-function deleteUser(pseudo){
-  if(!isAdmin) return;
-  set(ref(db,'users/'+pseudo),null);
-  set(ref(db,'onlineUsers/'+pseudo),null);
+
+window.createChannel=async function(){
+
+let name=prompt("Nom du salon")
+
+if(!name) return
+
+let snap=await get(ref(db,"channels"))
+
+let channels=snap.val()||{}
+
+for(let c in channels){
+
+if(channels[c].owner==pseudo){
+alert("Tu as déjà un salon")
+return
 }
 
-// Envoyer message
-function send(){
-  const text = document.getElementById('msg').value.trim();
-  if(!text) return;
-  push(ref(db,'messages'), { pseudo: currentPseudo, text });
-  document.getElementById('msg').value="";
 }
 
-// Listener pour être kick si compte supprimé
-function listenAccountDeletion(){
-  const userRef = ref(db,'users/'+currentPseudo);
-  onChildRemoved(userRef, () => {
-    document.getElementById('chatContainer').innerHTML = `
-      <div style="text-align:center; padding:50px; background: rgba(47,49,54,0.85); border-radius:15px; color:#fff;">
-        <h2>Votre compte a été supprimé !</h2>
-        <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; border-radius:12px; border:none; background:#5865f2; color:#fff; font-weight:bold; cursor:pointer;">Recharger</button>
-      </div>
-    `;
-  });
+await set(ref(db,"channels/"+name),{
+owner:pseudo
+})
+
 }
 
-// Supprimer online à la fermeture
-window.onbeforeunload = () => { if(!isAdmin) set(ref(db,'onlineUsers/'+currentPseudo),null); };
 
-window.send=send; window.register=register; window.login=login;
-window.showLogin=showLogin; window.showRegister=showRegister; window.backMenu=backMenu;
-window.showUsers=showUsers; window.deleteMessage=deleteMessage; window.deleteUser=deleteUser;
+/* OPEN CHANNEL */
+
+function openChannel(name){
+
+currentChannel=name
+
+document.getElementById("messages").innerHTML=""
+
+onChildAdded(ref(db,"channels/"+name+"/messages"),data=>{
+
+let m=data.val()
+
+let div=document.createElement("div")
+
+div.className="message"
+
+div.innerHTML="<b>"+m.pseudo+"</b> : "+m.text
+
+document.getElementById("messages").appendChild(div)
+
+})
+
+}
+
+
+/* SEND MESSAGE */
+
+document.getElementById("msgInput").addEventListener("keypress",e=>{
+
+if(e.key=="Enter"){
+
+let text=e.target.value
+
+push(ref(db,"channels/"+currentChannel+"/messages"),{
+pseudo:pseudo,
+text:text
+})
+
+e.target.value=""
+
+}
+
+})
+
 </script>
 
 </body>
