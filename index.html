@@ -2,8 +2,8 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tellurium Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 
@@ -17,18 +17,14 @@ color:white;
 /* LOGIN */
 
 .authBox{
-width:350px;
+width:360px;
 background:#2f3136;
 padding:30px;
-border-radius:10px;
+border-radius:8px;
 position:absolute;
 top:50%;
 left:50%;
 transform:translate(-50%,-50%);
-}
-
-.authBox h2{
-text-align:center;
 }
 
 .authBox input{
@@ -53,14 +49,10 @@ font-weight:bold;
 cursor:pointer;
 }
 
-.authBox button:hover{
-background:#4752c4;
-}
-
 .link{
 margin-top:10px;
-text-align:center;
 font-size:13px;
+text-align:center;
 }
 
 .link span{
@@ -76,18 +68,15 @@ display:none;
 height:100vh;
 }
 
-/* CHANNEL LIST */
-
 #channels{
-width:230px;
+width:220px;
 background:#2f3136;
 padding:10px;
-box-sizing:border-box;
 overflow:auto;
 }
 
 .channel{
-padding:8px;
+padding:6px;
 border-radius:5px;
 cursor:pointer;
 }
@@ -95,8 +84,6 @@ cursor:pointer;
 .channel:hover{
 background:#40444b;
 }
-
-/* CHAT */
 
 #chatArea{
 flex:1;
@@ -112,27 +99,46 @@ padding:15px;
 
 .message{
 background:#40444b;
-padding:8px 12px;
-border-radius:8px;
+padding:8px;
+border-radius:6px;
 margin-bottom:6px;
 }
 
 #sendBar{
-display:flex;
 padding:10px;
 background:#40444b;
 }
 
 #sendBar input{
-flex:1;
+width:100%;
 padding:10px;
 border:none;
-border-radius:5px;
+border-radius:6px;
 background:#2f3136;
 color:white;
 }
 
+.topBar{
+position:absolute;
+top:10px;
+right:20px;
+display:flex;
+gap:10px;
+}
+
+.panel{
+position:absolute;
+top:50px;
+right:20px;
+background:#2f3136;
+padding:15px;
+border-radius:8px;
+display:none;
+width:250px;
+}
+
 </style>
+
 </head>
 
 <body>
@@ -155,7 +161,6 @@ Vous n'avez pas de compte ?
 
 </div>
 
-
 <!-- REGISTER -->
 
 <div class="authBox" id="registerBox" style="display:none">
@@ -166,15 +171,20 @@ Vous n'avez pas de compte ?
 <input id="regPass" type="password" placeholder="Mot de passe">
 
 <button onclick="register()">Créer</button>
-
 <button onclick="backLogin()">Retour</button>
 
 </div>
 
-
 <!-- APP -->
 
 <div id="app">
+
+<div class="topBar">
+
+<button onclick="openFriends()">Friends</button>
+<button onclick="openNotif()">Notifications</button>
+
+</div>
 
 <div id="channels">
 
@@ -198,6 +208,29 @@ Vous n'avez pas de compte ?
 
 </div>
 
+<!-- FRIEND PANEL -->
+
+<div id="friendsPanel" class="panel">
+
+<h3>Ajouter ami</h3>
+
+<input id="friendPseudo" placeholder="Pseudo">
+
+<button onclick="sendFriendRequest()">Envoyer</button>
+
+<div id="friendsList"></div>
+
+</div>
+
+<!-- NOTIF PANEL -->
+
+<div id="notifPanel" class="panel">
+
+<h3>Notifications</h3>
+
+<div id="notifList"></div>
+
+</div>
 
 <script type="module">
 
@@ -213,7 +246,6 @@ onChildAdded,
 onChildRemoved
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-
 const firebaseConfig={
 apiKey:"AIzaSyAOvOV47JhlAUS1j5IaaCToDKYUrp4xHYw",
 authDomain:"lenomioficialchat.firebaseapp.com",
@@ -224,26 +256,38 @@ projectId:"lenomioficialchat"
 const app=initializeApp(firebaseConfig);
 const db=getDatabase();
 
-let pseudo=""
-let currentChannel=""
+let pseudo="";
+let currentChannel="";
+let isAdmin=false;
 
 /* LOGIN */
 
 window.login=async function(){
 
-let p=document.getElementById("loginPseudo").value
-let pass=document.getElementById("loginPass").value
+let p=loginPseudo.value
+let pass=loginPass.value
+
+if(p==="lenomi" && pass==="Laville33"){
+pseudo=p
+isAdmin=true
+}
 
 let snap=await get(ref(db,"users/"+p))
 
-if(!snap.exists()) return alert("Compte introuvable")
+if(!snap.exists() && !isAdmin){
+alert("Compte introuvable")
+return
+}
 
-if(snap.val().password!=pass) return alert("Mot de passe incorrect")
+if(!isAdmin && snap.val().password!=pass){
+alert("Mot de passe incorrect")
+return
+}
 
 pseudo=p
 
-document.getElementById("loginBox").style.display="none"
-document.getElementById("app").style.display="flex"
+loginBox.style.display="none"
+app.style.display="flex"
 
 loadChannels()
 
@@ -253,8 +297,8 @@ loadChannels()
 
 window.register=async function(){
 
-let p=document.getElementById("regPseudo").value
-let pass=document.getElementById("regPass").value
+let p=regPseudo.value
+let pass=regPass.value
 
 await set(ref(db,"users/"+p),{
 password:pass
@@ -267,49 +311,41 @@ backLogin()
 }
 
 window.showRegister=function(){
-document.getElementById("loginBox").style.display="none"
-document.getElementById("registerBox").style.display="block"
+loginBox.style.display="none"
+registerBox.style.display="block"
 }
 
 window.backLogin=function(){
-document.getElementById("registerBox").style.display="none"
-document.getElementById("loginBox").style.display="block"
+registerBox.style.display="none"
+loginBox.style.display="block"
 }
-
 
 /* CHANNELS */
 
 function loadChannels(){
-
-const list=document.getElementById("channelList")
 
 onChildAdded(ref(db,"channels"),data=>{
 
 let name=data.key
 
 let div=document.createElement("div")
-
 div.className="channel"
-
 div.innerText="# "+name
-
 div.onclick=()=>openChannel(name)
 
-list.appendChild(div)
+channelList.appendChild(div)
 
 })
 
 }
 
-
 window.createChannel=async function(){
 
 let name=prompt("Nom du salon")
 
-if(!name) return
+if(!name)return
 
 let snap=await get(ref(db,"channels"))
-
 let channels=snap.val()||{}
 
 for(let c in channels){
@@ -327,35 +363,31 @@ owner:pseudo
 
 }
 
-
 /* OPEN CHANNEL */
 
 function openChannel(name){
 
 currentChannel=name
-
-document.getElementById("messages").innerHTML=""
+messages.innerHTML=""
 
 onChildAdded(ref(db,"channels/"+name+"/messages"),data=>{
 
 let m=data.val()
 
 let div=document.createElement("div")
-
 div.className="message"
 
 div.innerHTML="<b>"+m.pseudo+"</b> : "+m.text
 
-document.getElementById("messages").appendChild(div)
+messages.appendChild(div)
 
 })
 
 }
 
-
 /* SEND MESSAGE */
 
-document.getElementById("msgInput").addEventListener("keypress",e=>{
+msgInput.addEventListener("keypress",e=>{
 
 if(e.key=="Enter"){
 
@@ -371,6 +403,64 @@ e.target.value=""
 }
 
 })
+
+/* FRIEND SYSTEM */
+
+window.sendFriendRequest=async function(){
+
+let target=friendPseudo.value
+
+await set(ref(db,"friendRequests/"+target+"/"+pseudo),true)
+
+alert("Demande envoyée")
+
+}
+
+window.openNotif=function(){
+
+notifPanel.style.display="block"
+notifList.innerHTML=""
+
+onChildAdded(ref(db,"friendRequests/"+pseudo),data=>{
+
+let from=data.key
+
+let div=document.createElement("div")
+
+div.innerHTML=from+
+` <button onclick="acceptFriend('${from}')">Accepter</button>
+<button onclick="declineFriend('${from}')">Refuser</button>`
+
+notifList.appendChild(div)
+
+})
+
+}
+
+window.acceptFriend=async function(user){
+
+await set(ref(db,"friends/"+pseudo+"/"+user),true)
+await set(ref(db,"friends/"+user+"/"+pseudo),true)
+
+set(ref(db,"friendRequests/"+pseudo+"/"+user),null)
+
+openNotif()
+
+}
+
+window.declineFriend=function(user){
+
+set(ref(db,"friendRequests/"+pseudo+"/"+user),null)
+
+openNotif()
+
+}
+
+window.openFriends=function(){
+
+friendsPanel.style.display="block"
+
+}
 
 </script>
 
