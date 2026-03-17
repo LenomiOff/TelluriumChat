@@ -1,192 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Tellurium Chat</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Site temporairement fermé</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
 
-<style>
-body{margin:0;font-family:Arial;background:#36393f;color:white;}
-.authBox{width:350px;background:#2f3136;padding:30px;border-radius:8px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
-.authBox input{width:100%;padding:10px;margin-top:10px;border:none;border-radius:5px;background:#202225;color:white;}
-.authBox button{width:100%;padding:10px;margin-top:15px;border:none;border-radius:5px;background:#5865f2;color:white;cursor:pointer;}
-.link{font-size:13px;text-align:center;margin-top:10px;}
-.link span{color:#00b0f4;cursor:pointer;text-decoration:underline;}
-#app{display:none;height:100vh;flex-direction:row;}
-#channels{width:220px;background:#2f3136;padding:10px;overflow:auto;}
-.channel{padding:6px;border-radius:5px;cursor:pointer;}
-.channel:hover{background:#40444b;}
-#chatArea{flex:1;display:flex;flex-direction:column;}
-#messages{flex:1;overflow:auto;padding:10px;}
-.message{background:#40444b;padding:6px;border-radius:6px;margin-bottom:5px;}
-.deleteBtn{float:right;cursor:pointer;color:red;}
-#sendBar{padding:10px;background:#40444b;display:flex;gap:5px;}
-#sendBar input{flex:1;padding:10px;border:none;border-radius:5px;background:#2f3136;color:white;}
-#sendBar button{padding:10px;border:none;border-radius:5px;background:#5865f2;color:white;cursor:pointer;}
-</style>
+        .container {
+            max-width: 500px;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 18px;
+            opacity: 0.8;
+        }
+    </style>
 </head>
-
 <body>
-
-<!-- LOGIN -->
-<div class="authBox" id="loginBox">
-<h2>Connexion</h2>
-<input id="loginPseudo" placeholder="Pseudo">
-<input id="loginPass" type="password" placeholder="Mot de passe">
-<button onclick="login()">Se connecter</button>
-<div class="link">Vous n'avez pas de compte ? <span onclick="showRegister()">Créer un compte</span></div>
-</div>
-
-<!-- REGISTER -->
-<div class="authBox" id="registerBox" style="display:none">
-<h2>Créer un compte</h2>
-<input id="regPseudo" placeholder="Pseudo">
-<input id="regPass" type="password" placeholder="Mot de passe">
-<button onclick="register()">Créer</button>
-<button onclick="backLogin()">Retour</button>
-</div>
-
-<!-- APP -->
-<div id="app">
-<div id="channels">
-<h3>Salons</h3>
-<div id="channelList"></div>
-<button onclick="createChannel()">Créer un salon</button>
-</div>
-
-<div id="chatArea">
-<div id="messages"></div>
-<div id="sendBar">
-<input id="msgInput" placeholder="Envoyer un message">
-<button onclick="sendMessage()">Envoyer</button>
-</div>
-</div>
-</div>
-
-<script type="module">
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {getDatabase, ref, push, set, get, remove, onChildAdded, off} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-const firebaseConfig={
-apiKey:"AIzaSyAOvOV47JhlAUS1j5IaaCToDKYUrp4xHYw",
-authDomain:"lenomioficialchat.firebaseapp.com",
-databaseURL:"https://lenomioficialchat-default-rtdb.europe-west1.firebasedatabase.app",
-projectId:"lenomioficialchat"
-};
-
-const app=initializeApp(firebaseConfig);
-const db=getDatabase();
-
-let pseudo="";
-let currentChannel="";
-let currentListener=null;
-let isAdmin=false;
-
-/* LOGIN */
-window.login=async function(){
-let p=loginPseudo.value
-let pass=loginPass.value
-
-if(p==="lenomi" && pass==="Laville33"){
-pseudo=p; isAdmin=true
-loginBox.style.display="none"; document.getElementById("app").style.display="flex"
-await ensureGeneralChannel()
-loadChannels()
-return
-}
-
-let snap=await get(ref(db,"users/"+p))
-if(!snap.exists()){alert("Compte introuvable");return}
-if(snap.val().password!=pass){alert("Mot de passe incorrect");return}
-
-pseudo=p
-loginBox.style.display="none"; document.getElementById("app").style.display="flex"
-await ensureGeneralChannel()
-loadChannels()
-}
-
-/* REGISTER */
-window.register=async function(){
-let p=regPseudo.value
-let pass=regPass.value
-await set(ref(db,"users/"+p),{password:pass})
-alert("Compte créé")
-backLogin()
-}
-
-window.showRegister=function(){loginBox.style.display="none";registerBox.style.display="block"}
-window.backLogin=function(){registerBox.style.display="none";loginBox.style.display="block"}
-
-/* CHANNELS */
-function loadChannels(){
-channelList.innerHTML=""
-onChildAdded(ref(db,"channels"),data=>{
-let name=data.key
-let div=document.createElement("div")
-div.className="channel"
-div.innerText="# "+name
-div.onclick=()=>openChannel(name)
-channelList.appendChild(div)
-})
-}
-
-window.createChannel=async function(){
-let name=prompt("Nom du salon")
-if(!name)return
-
-// Vérifier 1 salon max par compte
-let snap=await get(ref(db,"channels"))
-let channels=snap.val()||{}
-for(let c in channels){if(channels[c].owner===pseudo){alert("Tu as déjà un salon");return}}
-
-await set(ref(db,"channels/"+name),{owner:pseudo})
-}
-
-/* OPEN CHANNEL */
-async function openChannel(name){
-currentChannel=name
-messages.innerHTML=""
-
-// Supprimer ancien listener
-if(currentListener){off(currentListener)}
-let msgRef=ref(db,"channels/"+name+"/messages")
-currentListener=msgRef
-
-let channelData=await get(ref(db,"channels/"+name))
-let owner=channelData.val().owner
-
-onChildAdded(msgRef,data=>{
-let m=data.val()
-let div=document.createElement("div"); div.className="message"
-
-let deleteBtn=""
-if(isAdmin || owner===pseudo){deleteBtn=`<span class="deleteBtn" onclick="deleteMessage('${name}','${data.key}')">✖</span>`}
-
-div.innerHTML=`${deleteBtn}<b>${m.pseudo}</b> : ${m.text}`
-messages.appendChild(div)
-})
-}
-
-/* DELETE MESSAGE */
-window.deleteMessage=function(channel,id){remove(ref(db,"channels/"+channel+"/messages/"+id))}
-
-/* SEND MESSAGE */
-window.sendMessage=function(){
-let text=msgInput.value
-if(text=="" || currentChannel=="")return
-push(ref(db,"channels/"+currentChannel+"/messages"),{pseudo:pseudo,text:text})
-msgInput.value=""
-}
-
-// Entrée clavier
-msgInput.addEventListener("keypress",e=>{if(e.key==="Enter"){sendMessage()}})
-
-/* Channel général toujours présent */
-async function ensureGeneralChannel(){
-let snap=await get(ref(db,"channels/general"))
-if(!snap.exists()){await set(ref(db,"channels/general"),{owner:"system"})}
-}
-
-</script>
+    <div class="container">
+        <h1>🚧 Site temporairement fermé</h1>
+        <p>Nous effectuons actuellement une maintenance.</p>
+        <p>Merci de revenir plus tard.</p>
+    </div>
 </body>
 </html>
