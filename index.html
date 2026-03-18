@@ -2,41 +2,95 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Site temporairement fermé</title>
+    <title>Maintenance</title>
+
     <style>
         body {
             margin: 0;
-            padding: 0;
-            background-color: #0d1117;
-            color: #c9d1d9;
+            overflow: hidden;
+            background: black;
             font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            color: white;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
             text-align: center;
-        }
-
-        .container {
-            max-width: 500px;
-        }
-
-        h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚧 Site temporairement fermé</h1>
-        <p>Nous effectuons actuellement une maintenance.</p>
-        <p>Merci de revenir plus tard.</p>
-    </div>
+
+<canvas id="rain"></canvas>
+
+<div class="text">
+    🚧 Site en maintenance 🚧
+</div>
+
+<script>
+const canvas = document.getElementById("rain");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let rainDrops = [];
+
+for (let i = 0; i < 500; i++) {
+    rainDrops.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        length: Math.random() * 20,
+        speed: Math.random() * 5 + 2
+    });
+}
+
+function drawRain() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = "rgba(174,194,224,0.5)";
+    ctx.lineWidth = 1;
+
+    for (let i = 0; i < rainDrops.length; i++) {
+        let drop = rainDrops[i];
+
+        ctx.beginPath();
+        ctx.moveTo(drop.x, drop.y);
+        ctx.lineTo(drop.x, drop.y + drop.length);
+        ctx.stroke();
+
+        drop.y += drop.speed;
+
+        if (drop.y > canvas.height) {
+            drop.y = -20;
+            drop.x = Math.random() * canvas.width;
+        }
+    }
+}
+
+function animate() {
+    drawRain();
+    requestAnimationFrame(animate);
+}
+
+animate();
+
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+</script>
+
 </body>
 </html>
