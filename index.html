@@ -11,7 +11,6 @@
             background: #0a0f2c;
             font-family: Arial, sans-serif;
             color: white;
-            cursor: none; /* cache la souris */
         }
 
         canvas {
@@ -61,14 +60,6 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-/* ===== SOURIS ===== */
-let mouse = { x: canvas.width/2, y: canvas.height/2 };
-
-window.addEventListener("mousemove", (e) => {
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-});
-
 /* ===== PLUIE ===== */
 let rainDrops = [];
 
@@ -102,20 +93,6 @@ function drawRain() {
     }
 }
 
-/* ===== HALO LUMIERE SOURIS ===== */
-function drawLight() {
-    let gradient = ctx.createRadialGradient(
-        mouse.x, mouse.y, 0,
-        mouse.x, mouse.y, 150
-    );
-
-    gradient.addColorStop(0, "rgba(120,180,255,0.4)");
-    gradient.addColorStop(1, "rgba(0,0,0,0)");
-
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
 /* ===== TEXTE FLOTTANT ===== */
 const text = document.getElementById("floatingText");
 let t = 0;
@@ -134,23 +111,41 @@ function animateText() {
     `;
 }
 
-/* ===== ECLAIR CLICK ===== */
+/* ===== SYSTEME D'ECLAIR ===== */
 const flash = document.getElementById("flash");
 
-window.addEventListener("click", () => {
+function lightningFlash(intensity, duration) {
     flash.style.transition = "none";
-    flash.style.opacity = 0.8;
+    flash.style.opacity = intensity;
 
     setTimeout(() => {
-        flash.style.transition = "opacity 0.5s ease-out";
+        flash.style.transition = `opacity ${duration}ms ease-out`;
         flash.style.opacity = 0;
-    }, 50);
-});
+    }, 30);
+}
+
+function triggerLightning() {
+    // 3 flashs : petit / petit / gros
+    lightningFlash(0.4, 200);
+
+    setTimeout(() => {
+        lightningFlash(0.5, 250);
+    }, 120);
+
+    setTimeout(() => {
+        lightningFlash(0.9, 400);
+    }, 300);
+
+    // prochain éclair aléatoire
+    setTimeout(triggerLightning, Math.random() * 5000 + 4000);
+}
+
+// lancer premier éclair après un délai random
+setTimeout(triggerLightning, 2000);
 
 /* ===== ANIMATION ===== */
 function animate() {
     drawRain();
-    drawLight();
     animateText();
     requestAnimationFrame(animate);
 }
