@@ -11,6 +11,7 @@
             background: #0a0f2c;
             font-family: Arial, sans-serif;
             color: white;
+            cursor: none; /* cache la souris */
         }
 
         canvas {
@@ -28,6 +29,18 @@
             z-index: 10;
             transform: translate(-50%, -50%);
         }
+
+        /* FLASH ECLAIR */
+        .flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -38,14 +51,25 @@
     🚧 Site en maintenance 🚧
 </div>
 
+<div class="flash" id="flash"></div>
+
 <script>
-/* ===== PLUIE ===== */
+/* ===== CANVAS ===== */
 const canvas = document.getElementById("rain");
 const ctx = canvas.getContext("2d");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+/* ===== SOURIS ===== */
+let mouse = { x: canvas.width/2, y: canvas.height/2 };
+
+window.addEventListener("mousemove", (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+
+/* ===== PLUIE ===== */
 let rainDrops = [];
 
 for (let i = 0; i < 500; i++) {
@@ -78,16 +102,30 @@ function drawRain() {
     }
 }
 
-/* ===== TEXTE FLOTTANT ULTRA SMOOTH ===== */
+/* ===== HALO LUMIERE SOURIS ===== */
+function drawLight() {
+    let gradient = ctx.createRadialGradient(
+        mouse.x, mouse.y, 0,
+        mouse.x, mouse.y, 150
+    );
+
+    gradient.addColorStop(0, "rgba(120,180,255,0.4)");
+    gradient.addColorStop(1, "rgba(0,0,0,0)");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+/* ===== TEXTE FLOTTANT ===== */
 const text = document.getElementById("floatingText");
 let t = 0;
 
 function animateText() {
-    t += 0.01; // vitesse globale (plus petit = plus smooth)
+    t += 0.01;
 
-    let x = Math.sin(t) * 15;      // gauche/droite
-    let y = Math.cos(t * 0.8) * 10; // haut/bas (différent pour effet naturel)
-    let rot = Math.sin(t * 0.6) * 2; // rotation max ~2°
+    let x = Math.sin(t) * 15;
+    let y = Math.cos(t * 0.8) * 10;
+    let rot = Math.sin(t * 0.6) * 2;
 
     text.style.transform = `
         translate(-50%, -50%)
@@ -96,9 +134,23 @@ function animateText() {
     `;
 }
 
+/* ===== ECLAIR CLICK ===== */
+const flash = document.getElementById("flash");
+
+window.addEventListener("click", () => {
+    flash.style.transition = "none";
+    flash.style.opacity = 0.8;
+
+    setTimeout(() => {
+        flash.style.transition = "opacity 0.5s ease-out";
+        flash.style.opacity = 0;
+    }, 50);
+});
+
 /* ===== ANIMATION ===== */
 function animate() {
     drawRain();
+    drawLight();
     animateText();
     requestAnimationFrame(animate);
 }
