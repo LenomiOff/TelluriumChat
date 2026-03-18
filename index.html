@@ -8,7 +8,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: #0a0f2c; /* bleu très foncé */
+            background: #0a0f2c;
             font-family: Arial, sans-serif;
             color: white;
         }
@@ -27,6 +27,19 @@
             font-size: 3em;
             text-align: center;
             z-index: 10;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(-50%, -50%) translateY(0px);
+            }
+            50% {
+                transform: translate(-50%, -50%) translateY(-15px);
+            }
+            100% {
+                transform: translate(-50%, -50%) translateY(0px);
+            }
         }
     </style>
 </head>
