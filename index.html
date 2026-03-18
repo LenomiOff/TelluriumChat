@@ -29,7 +29,6 @@
             transform: translate(-50%, -50%);
         }
 
-        /* FLASH ECLAIR */
         .flash {
             position: fixed;
             top: 0;
@@ -125,16 +124,21 @@ function lightningFlash(intensity, duration) {
 }
 
 function triggerLightning() {
-    // 3 flashs : petit / petit / gros
-    lightningFlash(0.4, 200);
+    const pattern = Math.random() < 0.5 ? "single" : "double"; // 50% chance 1 ou 2 petits
 
-    setTimeout(() => {
-        lightningFlash(0.5, 250);
-    }, 120);
-
-    setTimeout(() => {
+    if (pattern === "single") {
+        // 1 seul flash gros
         lightningFlash(0.9, 400);
-    }, 300);
+    } else {
+        // 2 petits puis gros
+        lightningFlash(0.4, 200);
+        setTimeout(() => {
+            lightningFlash(0.5, 250);
+        }, 120);
+        setTimeout(() => {
+            lightningFlash(0.9, 400);
+        }, 300);
+    }
 
     // prochain éclair aléatoire
     setTimeout(triggerLightning, Math.random() * 5000 + 4000);
