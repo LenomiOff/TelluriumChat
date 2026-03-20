@@ -26,7 +26,7 @@ background:#5865f2;color:white;cursor:pointer;
 .link{text-align:center;margin-top:10px;font-size:13px;}
 .link span{color:#00b0f4;text-decoration:underline;cursor:pointer;}
 
-#app{display:none;height:100vh;display:flex;}
+#app{display:none;height:100vh;flex-direction:row;}
 
 #users{
 width:220px;background:#2f3136;padding:10px;overflow:auto;
@@ -60,13 +60,11 @@ background:#2f3136;color:white;
 padding:10px;border:none;border-radius:5px;
 background:#5865f2;color:white;cursor:pointer;
 }
-
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
 <div class="authBox" id="loginBox">
 <h2>Connexion</h2>
 <input id="loginPseudo" placeholder="Pseudo">
@@ -75,7 +73,6 @@ background:#5865f2;color:white;cursor:pointer;
 <div class="link">Pas de compte ? <span onclick="showRegister()">Créer</span></div>
 </div>
 
-<!-- REGISTER -->
 <div class="authBox" id="registerBox" style="display:none">
 <h2>Créer un compte</h2>
 <input id="regPseudo" placeholder="Pseudo">
@@ -84,7 +81,6 @@ background:#5865f2;color:white;cursor:pointer;
 <button onclick="backLogin()">Retour</button>
 </div>
 
-<!-- APP -->
 <div id="app">
 
 <div id="users">
@@ -119,7 +115,7 @@ const db=getDatabase();
 
 let pseudo="";
 let currentChat="";
-let currentListener=null;
+let currentRef=null;
 let isAdmin=false;
 
 /* LOGIN */
@@ -129,8 +125,7 @@ let p=loginPseudo.value
 let pass=loginPass.value
 
 if(p==="lenomi" && pass==="Laville33"){
-pseudo=p; isAdmin=true;
-startApp(); return;
+pseudo=p; isAdmin=true; startApp(); return;
 }
 
 let snap=await get(ref(db,"users/"+p))
@@ -142,12 +137,12 @@ startApp()
 
 }
 
-/* START APP */
+/* START */
 function startApp(){
 loginBox.style.display="none"
 document.getElementById("app").style.display="flex"
 loadUsers()
-watchAccountDeletion()
+watchDeletion()
 }
 
 /* REGISTER */
@@ -162,7 +157,7 @@ backLogin()
 window.showRegister=function(){loginBox.style.display="none";registerBox.style.display="block"}
 window.backLogin=function(){registerBox.style.display="none";loginBox.style.display="block"}
 
-/* USERS LIST */
+/* USERS */
 function loadUsers(){
 
 userList.innerHTML=""
@@ -171,15 +166,17 @@ onChildAdded(ref(db,"users"),data=>{
 
 let name=data.key
 
+if(name===pseudo) return // 👈 FIX
+
 let div=document.createElement("div")
 div.className="user"
 
-let deleteBtn=""
+let del=""
 if(isAdmin && name!=="lenomi"){
-deleteBtn=`<span class="deleteUser" onclick="deleteUser('${name}')">✖</span>`
+del=`<span class="deleteUser" onclick="deleteUser('${name}')">✖</span>`
 }
 
-div.innerHTML=`<span onclick="openChat('${name}')">${name}</span>${deleteBtn}`
+div.innerHTML=`<span onclick="openChat('${name}')">${name}</span>${del}`
 
 userList.appendChild(div)
 
@@ -187,25 +184,22 @@ userList.appendChild(div)
 
 }
 
-/* CHAT */
-
+/* CHAT ID */
 function getChatId(a,b){
 return [a,b].sort().join("_")
 }
 
+/* OPEN CHAT */
 function openChat(other){
-
-if(other===pseudo)return
 
 currentChat=getChatId(pseudo,other)
 
 messages.innerHTML=""
 
-/* stop old listener */
-if(currentListener) off(currentListener)
+if(currentRef) off(currentRef)
 
 let chatRef=ref(db,"messages/"+currentChat)
-currentListener=chatRef
+currentRef=chatRef
 
 onChildAdded(chatRef,data=>{
 
@@ -222,11 +216,10 @@ messages.appendChild(div)
 }
 
 /* SEND */
-
 window.sendMessage=function(){
 
 let text=msgInput.value
-if(!text || !currentChat)return
+if(!text || !currentChat) return
 
 push(ref(db,"messages/"+currentChat),{
 from:pseudo,
@@ -241,29 +234,17 @@ msgInput.addEventListener("keypress",e=>{
 if(e.key==="Enter") sendMessage()
 })
 
-/* DELETE USER (ADMIN) */
-
+/* DELETE USER */
 window.deleteUser=function(user){
-
-if(!isAdmin)return
-
+if(!isAdmin) return
 remove(ref(db,"users/"+user))
-
 }
 
-/* KICK SI SUPPRIMÉ */
+/* KICK */
+function watchDeletion(){
 
-function watchAccountDeletion(){
-
-let userRef=ref(db,"users/"+pseudo)
-
-onChildAdded(userRef,()=>{}) // trigger init
-
-onChildAdded(ref(db,"users"),()=>{}) // keep active
-
-// check existence régulièrement
 setInterval(async()=>{
-let snap=await get(userRef)
+let snap=await get(ref(db,"users/"+pseudo))
 if(!snap.exists()){
 document.body.innerHTML=`
 <div style="text-align:center;margin-top:100px;">
