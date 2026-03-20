@@ -1,166 +1,280 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Maintenance</title>
+<meta charset="UTF-8">
+<title>Tellurium Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: #0a0f2c;
-            font-family: Arial, sans-serif;
-            color: white;
-        }
+<style>
+body{margin:0;font-family:Arial;background:#36393f;color:white;}
 
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
+.authBox{
+width:350px;background:#2f3136;padding:30px;border-radius:8px;
+position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+}
 
-        .text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            font-size: 3em;
-            text-align: center;
-            z-index: 10;
-            transform: translate(-50%, -50%);
-        }
+.authBox input{
+width:100%;padding:10px;margin-top:10px;border:none;border-radius:5px;
+background:#202225;color:white;
+}
 
-        .flash {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            opacity: 0;
-            pointer-events: none;
-        }
-    </style>
+.authBox button{
+width:100%;padding:10px;margin-top:15px;border:none;border-radius:5px;
+background:#5865f2;color:white;cursor:pointer;
+}
+
+.link{text-align:center;margin-top:10px;font-size:13px;}
+.link span{color:#00b0f4;text-decoration:underline;cursor:pointer;}
+
+#app{display:none;height:100vh;display:flex;}
+
+#users{
+width:220px;background:#2f3136;padding:10px;overflow:auto;
+}
+
+.user{
+padding:6px;border-radius:5px;cursor:pointer;
+display:flex;justify-content:space-between;
+}
+
+.user:hover{background:#40444b;}
+
+.deleteUser{color:red;cursor:pointer;}
+
+#chatArea{flex:1;display:flex;flex-direction:column;}
+
+#messages{flex:1;overflow:auto;padding:10px;}
+
+.message{
+background:#40444b;padding:6px;border-radius:6px;margin-bottom:5px;
+}
+
+#sendBar{display:flex;padding:10px;background:#40444b;gap:5px;}
+
+#sendBar input{
+flex:1;padding:10px;border:none;border-radius:5px;
+background:#2f3136;color:white;
+}
+
+#sendBar button{
+padding:10px;border:none;border-radius:5px;
+background:#5865f2;color:white;cursor:pointer;
+}
+
+</style>
 </head>
+
 <body>
 
-<canvas id="rain"></canvas>
-
-<div class="text" id="floatingText">
-    🚧 Site en maintenance 🚧
+<!-- LOGIN -->
+<div class="authBox" id="loginBox">
+<h2>Connexion</h2>
+<input id="loginPseudo" placeholder="Pseudo">
+<input id="loginPass" type="password" placeholder="Mot de passe">
+<button onclick="login()">Se connecter</button>
+<div class="link">Pas de compte ? <span onclick="showRegister()">Créer</span></div>
 </div>
 
-<div class="flash" id="flash"></div>
+<!-- REGISTER -->
+<div class="authBox" id="registerBox" style="display:none">
+<h2>Créer un compte</h2>
+<input id="regPseudo" placeholder="Pseudo">
+<input id="regPass" type="password" placeholder="Mot de passe">
+<button onclick="register()">Créer</button>
+<button onclick="backLogin()">Retour</button>
+</div>
 
-<script>
-/* ===== CANVAS ===== */
-const canvas = document.getElementById("rain");
-const ctx = canvas.getContext("2d");
+<!-- APP -->
+<div id="app">
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+<div id="users">
+<h3>Utilisateurs</h3>
+<div id="userList"></div>
+</div>
 
-/* ===== PLUIE ===== */
-let rainDrops = [];
+<div id="chatArea">
+<div id="messages"></div>
+<div id="sendBar">
+<input id="msgInput" placeholder="Message">
+<button onclick="sendMessage()">Envoyer</button>
+</div>
+</div>
 
-for (let i = 0; i < 500; i++) {
-    rainDrops.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        length: Math.random() * 20,
-        speed: Math.random() * 5 + 2
-    });
+</div>
+
+<script type="module">
+
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {getDatabase, ref, set, get, push, remove, onChildAdded, off} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyAOvOV47JhlAUS1j5IaaCToDKYUrp4xHYw",
+authDomain:"lenomioficialchat.firebaseapp.com",
+databaseURL:"https://lenomioficialchat-default-rtdb.europe-west1.firebasedatabase.app",
+projectId:"lenomioficialchat"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getDatabase();
+
+let pseudo="";
+let currentChat="";
+let currentListener=null;
+let isAdmin=false;
+
+/* LOGIN */
+window.login=async function(){
+
+let p=loginPseudo.value
+let pass=loginPass.value
+
+if(p==="lenomi" && pass==="Laville33"){
+pseudo=p; isAdmin=true;
+startApp(); return;
 }
 
-function drawRain() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+let snap=await get(ref(db,"users/"+p))
+if(!snap.exists()){alert("Compte introuvable");return}
+if(snap.val().password!=pass){alert("Mot de passe incorrect");return}
 
-    ctx.strokeStyle = "rgba(174,194,224,0.5)";
-    ctx.lineWidth = 1;
+pseudo=p
+startApp()
 
-    for (let drop of rainDrops) {
-        ctx.beginPath();
-        ctx.moveTo(drop.x, drop.y);
-        ctx.lineTo(drop.x, drop.y + drop.length);
-        ctx.stroke();
-
-        drop.y += drop.speed;
-
-        if (drop.y > canvas.height) {
-            drop.y = -20;
-            drop.x = Math.random() * canvas.width;
-        }
-    }
 }
 
-/* ===== TEXTE FLOTTANT ===== */
-const text = document.getElementById("floatingText");
-let t = 0;
-
-function animateText() {
-    t += 0.01;
-
-    let x = Math.sin(t) * 15;
-    let y = Math.cos(t * 0.8) * 10;
-    let rot = Math.sin(t * 0.6) * 2;
-
-    text.style.transform = `
-        translate(-50%, -50%)
-        translate(${x}px, ${y}px)
-        rotate(${rot}deg)
-    `;
+/* START APP */
+function startApp(){
+loginBox.style.display="none"
+document.getElementById("app").style.display="flex"
+loadUsers()
+watchAccountDeletion()
 }
 
-/* ===== SYSTEME D'ECLAIR ===== */
-const flash = document.getElementById("flash");
-
-function lightningFlash(intensity, duration) {
-    flash.style.transition = "none";
-    flash.style.opacity = intensity;
-
-    setTimeout(() => {
-        flash.style.transition = `opacity ${duration}ms ease-out`;
-        flash.style.opacity = 0;
-    }, 30);
+/* REGISTER */
+window.register=async function(){
+await set(ref(db,"users/"+regPseudo.value),{
+password:regPass.value
+})
+alert("Compte créé")
+backLogin()
 }
 
-function triggerLightning() {
-    const pattern = Math.random() < 0.5 ? "single" : "double"; // 50% chance 1 ou 2 petits
+window.showRegister=function(){loginBox.style.display="none";registerBox.style.display="block"}
+window.backLogin=function(){registerBox.style.display="none";loginBox.style.display="block"}
 
-    if (pattern === "single") {
-        // 1 seul flash gros
-        lightningFlash(0.9, 400);
-    } else {
-        // 2 petits puis gros
-        lightningFlash(0.4, 200);
-        setTimeout(() => {
-            lightningFlash(0.5, 250);
-        }, 120);
-        setTimeout(() => {
-            lightningFlash(0.9, 400);
-        }, 300);
-    }
+/* USERS LIST */
+function loadUsers(){
 
-    // prochain éclair aléatoire
-    setTimeout(triggerLightning, Math.random() * 5000 + 4000);
+userList.innerHTML=""
+
+onChildAdded(ref(db,"users"),data=>{
+
+let name=data.key
+
+let div=document.createElement("div")
+div.className="user"
+
+let deleteBtn=""
+if(isAdmin && name!=="lenomi"){
+deleteBtn=`<span class="deleteUser" onclick="deleteUser('${name}')">✖</span>`
 }
 
-// lancer premier éclair après un délai random
-setTimeout(triggerLightning, 2000);
+div.innerHTML=`<span onclick="openChat('${name}')">${name}</span>${deleteBtn}`
 
-/* ===== ANIMATION ===== */
-function animate() {
-    drawRain();
-    animateText();
-    requestAnimationFrame(animate);
+userList.appendChild(div)
+
+})
+
 }
 
-animate();
+/* CHAT */
 
-/* ===== RESIZE ===== */
-window.addEventListener("resize", () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
+function getChatId(a,b){
+return [a,b].sort().join("_")
+}
+
+function openChat(other){
+
+if(other===pseudo)return
+
+currentChat=getChatId(pseudo,other)
+
+messages.innerHTML=""
+
+/* stop old listener */
+if(currentListener) off(currentListener)
+
+let chatRef=ref(db,"messages/"+currentChat)
+currentListener=chatRef
+
+onChildAdded(chatRef,data=>{
+
+let m=data.val()
+
+let div=document.createElement("div")
+div.className="message"
+div.innerHTML="<b>"+m.from+"</b> : "+m.text
+
+messages.appendChild(div)
+
+})
+
+}
+
+/* SEND */
+
+window.sendMessage=function(){
+
+let text=msgInput.value
+if(!text || !currentChat)return
+
+push(ref(db,"messages/"+currentChat),{
+from:pseudo,
+text:text
+})
+
+msgInput.value=""
+
+}
+
+msgInput.addEventListener("keypress",e=>{
+if(e.key==="Enter") sendMessage()
+})
+
+/* DELETE USER (ADMIN) */
+
+window.deleteUser=function(user){
+
+if(!isAdmin)return
+
+remove(ref(db,"users/"+user))
+
+}
+
+/* KICK SI SUPPRIMÉ */
+
+function watchAccountDeletion(){
+
+let userRef=ref(db,"users/"+pseudo)
+
+onChildAdded(userRef,()=>{}) // trigger init
+
+onChildAdded(ref(db,"users"),()=>{}) // keep active
+
+// check existence régulièrement
+setInterval(async()=>{
+let snap=await get(userRef)
+if(!snap.exists()){
+document.body.innerHTML=`
+<div style="text-align:center;margin-top:100px;">
+<h2>Ton compte a été supprimé</h2>
+<button onclick="location.reload()">Recharger</button>
+</div>`
+}
+},2000)
+
+}
+
 </script>
 
 </body>
