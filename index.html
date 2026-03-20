@@ -7,59 +7,26 @@
 
 <style>
 body{margin:0;font-family:Arial;background:#36393f;color:white;}
-
-.authBox{
-width:350px;background:#2f3136;padding:30px;border-radius:8px;
-position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-}
-
-.authBox input{
-width:100%;padding:10px;margin-top:10px;border:none;border-radius:5px;
-background:#202225;color:white;
-}
-
-.authBox button{
-width:100%;padding:10px;margin-top:15px;border:none;border-radius:5px;
-background:#5865f2;color:white;cursor:pointer;
-}
-
+.authBox{width:350px;background:#2f3136;padding:30px;border-radius:8px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+.authBox input{width:100%;padding:10px;margin-top:10px;border:none;border-radius:5px;background:#202225;color:white;}
+.authBox button{width:100%;padding:10px;margin-top:15px;border:none;border-radius:5px;background:#5865f2;color:white;cursor:pointer;}
 .link{text-align:center;margin-top:10px;font-size:13px;}
 .link span{color:#00b0f4;text-decoration:underline;cursor:pointer;}
 
 #app{display:none;height:100vh;flex-direction:row;}
 
-#users{
-width:220px;background:#2f3136;padding:10px;overflow:auto;
-}
-
-.user{
-padding:6px;border-radius:5px;cursor:pointer;
-display:flex;justify-content:space-between;
-}
-
+#users{width:220px;background:#2f3136;padding:10px;overflow:auto;}
+.user{padding:6px;border-radius:5px;cursor:pointer;display:flex;justify-content:space-between;}
 .user:hover{background:#40444b;}
-
 .deleteUser{color:red;cursor:pointer;}
 
 #chatArea{flex:1;display:flex;flex-direction:column;}
-
 #messages{flex:1;overflow:auto;padding:10px;}
-
-.message{
-background:#40444b;padding:6px;border-radius:6px;margin-bottom:5px;
-}
+.message{background:#40444b;padding:6px;border-radius:6px;margin-bottom:5px;}
 
 #sendBar{display:flex;padding:10px;background:#40444b;gap:5px;}
-
-#sendBar input{
-flex:1;padding:10px;border:none;border-radius:5px;
-background:#2f3136;color:white;
-}
-
-#sendBar button{
-padding:10px;border:none;border-radius:5px;
-background:#5865f2;color:white;cursor:pointer;
-}
+#sendBar input{flex:1;padding:10px;border:none;border-radius:5px;background:#2f3136;color:white;}
+#sendBar button{padding:10px;border:none;border-radius:5px;background:#5865f2;color:white;cursor:pointer;}
 </style>
 </head>
 
@@ -101,7 +68,7 @@ background:#5865f2;color:white;cursor:pointer;
 <script type="module">
 
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {getDatabase, ref, set, get, push, remove, onChildAdded, off} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import {getDatabase, ref, set, get, push, remove, onValue, off} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyAOvOV47JhlAUS1j5IaaCToDKYUrp4xHYw",
@@ -162,11 +129,15 @@ function loadUsers(){
 
 userList.innerHTML=""
 
-onChildAdded(ref(db,"users"),data=>{
+onValue(ref(db,"users"),snap=>{
 
-let name=data.key
+userList.innerHTML=""
 
-if(name===pseudo) return // 👈 FIX
+let data=snap.val()||{}
+
+for(let name in data){
+
+if(name===pseudo) continue
 
 let div=document.createElement("div")
 div.className="user"
@@ -179,6 +150,8 @@ del=`<span class="deleteUser" onclick="deleteUser('${name}')">✖</span>`
 div.innerHTML=`<span onclick="openChat('${name}')">${name}</span>${del}`
 
 userList.appendChild(div)
+
+}
 
 })
 
@@ -201,15 +174,23 @@ if(currentRef) off(currentRef)
 let chatRef=ref(db,"messages/"+currentChat)
 currentRef=chatRef
 
-onChildAdded(chatRef,data=>{
+onValue(chatRef,snap=>{
 
-let m=data.val()
+messages.innerHTML=""
+
+let data=snap.val()||{}
+
+for(let id in data){
+
+let m=data[id]
 
 let div=document.createElement("div")
 div.className="message"
 div.innerHTML="<b>"+m.from+"</b> : "+m.text
 
 messages.appendChild(div)
+
+}
 
 })
 
@@ -229,10 +210,6 @@ text:text
 msgInput.value=""
 
 }
-
-msgInput.addEventListener("keypress",e=>{
-if(e.key==="Enter") sendMessage()
-})
 
 /* DELETE USER */
 window.deleteUser=function(user){
