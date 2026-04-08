@@ -7,10 +7,15 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>YouTube Lite</h1>
-<input id="urlInput" type="text" placeholder="Colle ton URL YouTube">
-<button onclick="loadVideo()">Lire la vidéo</button>
-<div id="player"></div>
+<div class="container">
+    <h1>YouTube Lite</h1>
+    <p>Regarde des vidéos YouTube sans pub et sans compte</p>
+    <div class="input-group">
+        <input id="urlInput" type="text" placeholder="Colle ton URL YouTube">
+        <button onclick="loadVideo()">Lire</button>
+    </div>
+    <div id="player"></div>
+</div>
 <script src="script.js"></script>
 </body>
 </html>
