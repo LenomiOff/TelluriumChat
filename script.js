@@ -4,9 +4,7 @@ function loadVideo() {
     if (!videoId) return alert("URL invalide !");
     
     document.getElementById('player').innerHTML = `
-        <iframe width="560" height="315"
-        src="https://www.youtube.com/embed/${videoId}"
-        frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
-        </iframe>
+        <iframe src="https://www.youtube.com/embed/${videoId}"
+        allow="autoplay; encrypted-media" allowfullscreen></iframe>
     `;
 }
