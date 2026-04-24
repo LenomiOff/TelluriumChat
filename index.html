@@ -3,25 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <title>YouTube Lite</title>
-  <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body style="background:black;color:white;font-family:sans-serif">
 
-<header>
-  <h1>YouTube Lite</h1>
-  <input type="text" id="searchInput" placeholder="Rechercher...">
-  <button onclick="searchVideos()">🔍</button>
-</header>
+<h1>YouTube Lite</h1>
 
-<main id="home">
-  <div id="videoGrid"></div>
-</main>
+<input id="urlInput" placeholder="Colle un lien YouTube">
+<button onclick="loadVideo()">Lire</button>
 
-<div id="playerPage" class="hidden">
-  <button onclick="goBack()">⬅ Retour</button>
-  <iframe id="videoPlayer" frameborder="0" allowfullscreen></iframe>
-</div>
+<br><br>
 
-<script src="script.js"></script>
+<iframe id="player" width="800" height="450" frameborder="0" allowfullscreen></iframe>
+
+<script>
+function loadVideo() {
+  const url = document.getElementById("urlInput").value;
+
+  // extraction ID vidéo
+  let id = "";
+  if (url.includes("watch?v=")) {
+    id = url.split("watch?v=")[1];
+  } else if (url.includes("youtu.be/")) {
+    id = url.split("youtu.be/")[1];
+  }
+
+  document.getElementById("player").src =
+    "https://www.youtube.com/embed/" + id;
+}
+</script>
+
 </body>
 </html>
