@@ -1,21 +1,27 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YouTube Lite</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>YouTube Lite</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
-    <h1>YouTube Lite</h1>
-    <p>Regarde des vidéos YouTube sans pub et sans compte</p>
-    <div class="input-group">
-        <input id="urlInput" type="text" placeholder="Colle ton URL YouTube">
-        <button onclick="loadVideo()">Lire</button>
-    </div>
-    <div id="player"></div>
+
+<header>
+  <h1>YouTube Lite</h1>
+  <input type="text" id="searchInput" placeholder="Rechercher...">
+  <button onclick="searchVideos()">🔍</button>
+</header>
+
+<main id="home">
+  <div id="videoGrid"></div>
+</main>
+
+<div id="playerPage" class="hidden">
+  <button onclick="goBack()">⬅ Retour</button>
+  <iframe id="videoPlayer" frameborder="0" allowfullscreen></iframe>
 </div>
+
 <script src="script.js"></script>
 </body>
 </html>
